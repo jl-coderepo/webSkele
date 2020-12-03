@@ -1,59 +1,43 @@
-const path = require("path");
-const webpack = require("webpack");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
-const MiniCssExtractPlugin = require("mini-css-extract-plugin");
-const { CleanWebpackPlugin } = require("clean-webpack-plugin");
+const ModuleFederationPlugin = require("webpack/lib/container/ModuleFederationPlugin");
+const path = require("path");
 
 module.exports = {
-  entry: {
-    main: path.resolve(__dirname, "./src/index.tsx"),
+  entry: path.resolve(__dirname, "./src/index.tsx"),
+  mode: "development",
+  devServer: {
+    contentBase: path.join(__dirname, "dist"),
+    port: 3001,
   },
   output: {
-    path: path.resolve(__dirname, "./dist"),
-    filename: "[name].bundle.js",
+    publicPath: "http://localhost:3001/",
   },
-  target: "web",
-  mode: "development",
-  devtool: "inline-source-map",
   resolve: {
-    extensions: [".js", ".jsx", ".json", ".ts", ".tsx"],
+    extensions: [".ts", ".tsx", ".js"],
   },
   module: {
     rules: [
       {
-        test: /\.(ts|tsx)$/,
-        loader: "ts-loader",
+        test: /\.tsx?$/,
+        loader: "babel-loader",
         exclude: /node_modules/,
-      },
-      {
-        enforce: "pre",
-        test: /\.js$/,
-        loader: "source-map-loader",
-      },
-      {
-        test: /\.css$/,
-        loader: "css-loader",
+        options: {
+          presets: ["@babel/preset-react", "@babel/preset-typescript"],
+        },
       },
     ],
   },
-  devServer: {
-    historyApiFallback: true,
-    contentBase: path.resolve(__dirname, "./dist"),
-    open: true,
-    compress: true,
-    hot: true,
-    port: 8080,
-  },
   plugins: [
+    new ModuleFederationPlugin({
+      name: "webskele",
+      filename: "remoteEntry.js",
+      exposes: {
+        "./HeaderTest": path.resolve(__dirname, "./src/components/HeaderTest"),
+      },
+      shared: ["react", "react-dom"],
+    }),
     new HtmlWebpackPlugin({
-      title: "webpack Boilerplate",
-      template: path.resolve(__dirname, "./src/index.html"), // template file
-      filename: "index.html", // output file
+      template: path.resolve(__dirname, "./src/index.html"),
     }),
-    new MiniCssExtractPlugin({
-      filename: "./src/yourfile.css",
-    }),
-    new CleanWebpackPlugin(),
-    new webpack.HotModuleReplacementPlugin(),
   ],
 };
